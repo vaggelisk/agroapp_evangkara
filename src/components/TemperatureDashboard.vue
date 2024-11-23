@@ -16,13 +16,13 @@
       <div class="py-4" />
 
       <div class="py-2">
-        <v-btn class="mr-2" variant="tonal">
+        <v-btn class="mr-2" variant="tonal" @click="setNowValues">
           Now
         </v-btn>
-        <v-btn class="ma-2" variant="tonal">
+        <v-btn class="ma-2" variant="tonal" @click="setTodayValues">
           Today
         </v-btn>
-        <v-btn  class="ma-2" variant="tonal" @click="openModal">
+        <v-btn  class="ma-2" variant="tonal" @click="openDateModal">
           Date
         </v-btn>
       </div>
@@ -35,18 +35,18 @@
                 v-model="date" scrollable actions
                 :allowed-dates="allowedDates"
                 min="2024-11-10"
-                max="2024-11-30"
+                max="2024-12-10"
               >
               </v-date-picker>
               <v-card-actions>
                 <v-btn variant="outlined" color="primary" @click="modal=false">Cancel</v-btn>
-                <v-btn variant="elevated" color="primary"  @click="modal=false">OK</v-btn>
+                <v-btn variant="elevated" color="primary"  @click="closeDateModal(true)">OK</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
         </v-col>
       </v-row>
-      {{date}} --
+      {{this.time==='today' ? 'Today' : date}}
       <v-card class="py-4" rounded="lg">
         <template #image>
           <v-img :src=iconUrl position="bottom right" />
@@ -265,19 +265,32 @@ export default {
   data() {
     return {
       city: "",
+      serialDay: null,
       time: "now",
       date: new Date(),
+      selectedDate: new Date(),
       modal: false,
       weatherData: null,
-      hourlyForecast: [],
       dailyForecast: [],
     };
   },
   computed: {
     temperature() {
-      return this.weatherData
-        ? Math.floor(this.weatherData.main.temp - 273)
-        : null;
+      if (this.time==='now') {
+        return this.weatherData
+          ? Math.floor(this.weatherData.main.temp - 273)
+          : null;
+      } else if (this.time==='today') {
+        return this.dailyForecast[0]
+          ? this.dailyForecast[0].temp
+          : null
+      } else if (this.time==='1' || this.time==='2' || this.time==='3' || this.time==='4') {
+        return this.dailyForecast[Number(this.time)]
+          ? this.dailyForecast[Number(this.time)].temp
+          : null
+      } else {
+        return null
+      }
     },
     main() {
       return this.weatherData
@@ -316,13 +329,12 @@ export default {
     },
     pressure() {
       return this.weatherData
-        ? Math.floor(this.weatherData.main.pressure / 1000)
+        ? this.weatherData.main.pressure / 1000
         : null;
     },
     iconUrl() {
       return this.weatherData
-        ?
-        `https://api.openweathermap.org/img/w/${this.weatherData.weather[0].icon}.png`
+        ? `https://api.openweathermap.org/img/w/${this.weatherData.weather[0].icon}.png`
         : null;
     },
   },
@@ -331,44 +343,38 @@ export default {
   },
   methods: {
     allowedDates(val) {
-      let vag = parseInt(this.$vuetify.date.toISO(val).split('-')[2], 10) % 2
-      // let today = this.
-      // console.log(vag)
       let today = new Date()
       let fiveDaysLater = new Date();
       fiveDaysLater.setDate(today.getDate() + 4);
-      console.log( this.$vuetify.date.toISO(val) )
-      console.log(today)
-      console.log(this.$vuetify.date.toISO(val))
-      console.log(val > today)
-      console.log(fiveDaysLater)
       return val > today && val < fiveDaysLater;
-      // return parseInt(this.$vuetify.date.toISO(val).split('-')[2], 10) % 2 === 0
     },
-    // allowedDates(val) {
-    //   for (let i = 0; i < this.el.length; i++) {
-    //     if (this.el[i] === val){
-    //       return val
-    //     }
-    //   }
-    // },
-    disablePastDates(val) {
-      console.log(new Date().toISOString().substring(0, 10))
-      return val >= new Date().toISOString().substring(0, 10)
+    setTodayValues() {
+      this.time = 'today'
     },
-    openModal() {
+    setNowValues() {
+      this.time = 'now'
+      this.date = new Date()
+    },
+    closeDateModal(save) {
+      if (save) {
+        let today = new Date()
+        let diafora = this.date - today
+        this.serialDay = Math.floor( diafora / (24 * 60 * 60 * 1000) + 1 )
+        this.time = this.serialDay.toString()
+      }
+      this.modal = false
+    },
+    openDateModal() {
       this.modal = true;
     },
     async fetchCurrentLocationWeather() {
       const url = `https://api.openweathermap.org/data/2.5/weather?lat=40.58725980318928&lon=22.948223362612612&appid=${apikey}`;
       await this.fetchWeatherData(url);
     },
-
     async fetchWeatherData(url) {
       try {
         const response = await axios.get(url);
         this.weatherData = response.data;
-        console.log(response.data)
         // Fetch forecast data
         await this.fetchForecast();
       } catch (error) {
@@ -380,36 +386,28 @@ export default {
       try {
         const response = await axios.get(urlcast);
         const forecast = response.data;
-        console.log(forecast)
-        this.hourForecast(forecast);
         this.dayForecast(forecast);
       } catch (error) {
         console.error("Error fetching forecast data:", error);
-      }
-    },
-    hourForecast(forecast) {
-      this.hourlyForecast = [];
-      for (let i = 0; i < 5; i++) {
-        const date = new Date(forecast.list[i].dt * 1000);
-        this.hourlyForecast.push({
-          time: date
-            .toLocaleTimeString(undefined, "Asia/Kolkata")
-            .replace(":00", ""),
-          temp_max: Math.floor(forecast.list[i].main.temp_max - 273),
-          temp_min: Math.floor(forecast.list[i].main.temp_min - 273),
-          description: forecast.list[i].weather[0].description,
-        });
       }
     },
     dayForecast(forecast) {
       this.dailyForecast = [];
       for (let i = 0; i < forecast.list.length; i += 8) {
         const date = new Date(forecast.list[i].dt * 1000);
+        let sumTemp     = 0
+        let sumTemp_max = 0
+        let sumTemp_min = 0
+        for (let j=i; j < i+8; j += 1) {
+          sumTemp     +=  forecast.list[j].main.temp
+          sumTemp_max +=  forecast.list[j].main.temp_max
+          sumTemp_min +=  forecast.list[j].main.temp_min
+        }
         this.dailyForecast.push({
-          date: date.toDateString(undefined, "Asia/Kolkata"),
-          temp: Math.floor(forecast.list[i].main.temp - 273),
-          temp_max: Math.floor(forecast.list[i].main.temp_max - 273),
-          temp_min: Math.floor(forecast.list[i].main.temp_min - 273),
+          date: date.toDateString(undefined, "Europe/Athens"),
+          temp: Math.floor(sumTemp/8 - 273),
+          temp_max: Math.floor(sumTemp_max/8 - 273),
+          temp_min: Math.floor(sumTemp_min/8 - 273),
           description: forecast.list[i].weather[0].description,
         });
       }
@@ -417,5 +415,4 @@ export default {
   },
 };
 
-  //
 </script>
