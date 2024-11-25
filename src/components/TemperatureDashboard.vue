@@ -303,34 +303,106 @@ export default {
         : null;
     },
     tempFeelsLike() {
-      return this.weatherData
-        ? Math.floor(this.weatherData.main.feels_like - 273)
-        : null;
+      if (this.time==='now') {
+        return this.weatherData
+          ? Math.floor(this.weatherData.main.feels_like - 273)
+          : null;
+      } else if (this.time==='today') {
+        return this.dailyForecast[0]
+          ? this.dailyForecast[0].tempFeelsLike
+          : null
+      } else if (this.time==='1' || this.time==='2' || this.time==='3' || this.time==='4') {
+        return this.dailyForecast[Number(this.time)]
+          ? this.dailyForecast[Number(this.time)].tempFeelsLike
+          : null
+      } else {
+        return null
+      }
     },
     windSpeed() {
-      return this.weatherData
-        ? this.weatherData.wind.speed
-        : null;
+      if (this.time==='now') {
+        return this.weatherData
+          ? this.weatherData.wind.speed
+          : null;
+      } else if (this.time==='today') {
+        return this.dailyForecast[0]
+          ? this.dailyForecast[0].windSpeed
+          : null
+      } else if (this.time==='1' || this.time==='2' || this.time==='3' || this.time==='4') {
+        return this.dailyForecast[Number(this.time)]
+          ? this.dailyForecast[Number(this.time)].windSpeed
+          : null
+      } else {
+        return null
+      }
     },
     windGust() {
-      return this.weatherData
-        ? this.weatherData.wind.speed
-        : null;
+      if (this.time==='now') {
+        return this.weatherData
+          ? this.weatherData.wind.speed
+          : null;
+      } else if (this.time==='today') {
+        return this.dailyForecast[0]
+          ? this.dailyForecast[0].windGust
+          : null
+      } else if (this.time==='1' || this.time==='2' || this.time==='3' || this.time==='4') {
+        return this.dailyForecast[Number(this.time)]
+          ? this.dailyForecast[Number(this.time)].windGust
+          : null
+      } else {
+        return null
+      }
     },
     windDeg() {
-      return this.weatherData
-        ? this.weatherData.wind.deg
-        : null;
+      if (this.time==='now') {
+        return this.weatherData
+          ? this.weatherData.wind.deg
+          : null;
+      } else if (this.time==='today') {
+        return this.dailyForecast[0]
+          ? this.dailyForecast[0].windDeg
+          : null
+      } else if (this.time==='1' || this.time==='2' || this.time==='3' || this.time==='4') {
+        return this.dailyForecast[Number(this.time)]
+          ? this.dailyForecast[Number(this.time)].windDeg
+          : null
+      } else {
+        return null
+      }
     },
     humidity() {
-      return this.weatherData
-        ? this.weatherData.main.humidity
-        : null;
+      if (this.time==='now') {
+        return this.weatherData
+          ? this.weatherData.main.humidity
+          : null;
+      } else if (this.time==='today') {
+        return this.dailyForecast[0]
+          ? this.dailyForecast[0].humidity
+          : null
+      } else if (this.time==='1' || this.time==='2' || this.time==='3' || this.time==='4') {
+        return this.dailyForecast[Number(this.time)]
+          ? this.dailyForecast[Number(this.time)].humidity
+          : null
+      } else {
+        return null
+      }
     },
     pressure() {
-      return this.weatherData
-        ? this.weatherData.main.pressure / 1000
-        : null;
+      if (this.time==='now') {
+        return this.weatherData
+          ? this.weatherData.main.pressure/1000
+          : null;
+      } else if (this.time==='today') {
+        return this.dailyForecast[0]
+          ? this.dailyForecast[0].pressure/1000
+          : null
+      } else if (this.time==='1' || this.time==='2' || this.time==='3' || this.time==='4') {
+        return this.dailyForecast[Number(this.time)]
+          ? this.dailyForecast[Number(this.time)].pressure/1000
+          : null
+      } else {
+        return null
+      }
     },
     iconUrl() {
       return this.weatherData
@@ -395,19 +467,37 @@ export default {
       this.dailyForecast = [];
       for (let i = 0; i < forecast.list.length; i += 8) {
         const date = new Date(forecast.list[i].dt * 1000);
-        let sumTemp     = 0
-        let sumTemp_max = 0
-        let sumTemp_min = 0
+        let sumTemp          = 0
+        let sumTemp_max      = 0
+        let sumTemp_min      = 0
+        let sumTempFeelsLike = 0
+        let sumPressure      = 0
+        let sumHumidity      = 0
+        let sumWindSpeed     = 0
+        let sumWindGust      = 0
+        let sumWindDeg       = 0
         for (let j=i; j < i+8; j += 1) {
-          sumTemp     +=  forecast.list[j].main.temp
-          sumTemp_max +=  forecast.list[j].main.temp_max
-          sumTemp_min +=  forecast.list[j].main.temp_min
+          sumTemp           +=  forecast.list[j].main.temp
+          sumTemp_max       +=  forecast.list[j].main.temp_max
+          sumTemp_min       +=  forecast.list[j].main.temp_min
+          sumTempFeelsLike  +=  forecast.list[j].main.feels_like
+          sumPressure       +=  forecast.list[j].main.pressure
+          sumHumidity       +=  forecast.list[j].main.humidity
+          sumWindSpeed      +=  forecast.list[j].wind.speed
+          sumWindGust       +=  forecast.list[j].wind.gust
+          sumWindDeg        +=  forecast.list[j].wind.deg
         }
         this.dailyForecast.push({
           date: date.toDateString(undefined, "Europe/Athens"),
-          temp: Math.floor(sumTemp/8 - 273),
-          temp_max: Math.floor(sumTemp_max/8 - 273),
-          temp_min: Math.floor(sumTemp_min/8 - 273),
+          temp:           Math.floor(sumTemp         /8 - 273),
+          temp_max:       Math.floor(sumTemp_max     /8 - 273),
+          temp_min:       Math.floor(sumTemp_min     /8 - 273),
+          tempFeelsLike:  Math.floor(sumTempFeelsLike/8 - 273),
+          pressure:       Math.floor(sumPressure /8),
+          humidity:       Math.floor(sumHumidity /8),
+          windDeg:        Math.floor(sumWindDeg  /8),
+          windSpeed:      Math.floor(sumWindSpeed*100/8)/100,
+          windGust:       Math.floor(sumWindGust *100/8)/100,
           description: forecast.list[i].weather[0].description,
         });
       }
